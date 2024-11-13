@@ -1,3 +1,5 @@
+// To integrate the frontend with the backend, we need to map the fields from the frontend form to the request body expected by the backend endpoint. We will also handle the response to update the frontend accordingly. Additionally, we will implement a loading indicator to enhance user experience during the API call.
+
 import React, { FC, useState } from "react";
 import LocationInput from "../LocationInput";
 import { Popover, Transition } from "@headlessui/react";
@@ -6,34 +8,25 @@ import { Fragment } from "react";
 import FlightDateRangeInput from "./FlightDateRangeInput";
 import { GuestsObject } from "../type";
 import NcInputNumber from "components/NcInputNumber/NcInputNumber";
+import axios from 'axios';
 
 export interface FlightSearchFormProps {}
 
 const flightClass = [
-  {
-    name: "Economy",
-    href: "##",
-  },
-  {
-    name: "Business",
-    href: "##",
-  },
-  {
-    name: "Multiple",
-    href: "##",
-  },
+  { name: "Economy", href: "##" },
+  { name: "Business", href: "##" },
+  { name: "Multiple", href: "##" },
 ];
 
 export type TypeDropOffLocationType = "roundTrip" | "oneWay" | "";
 
 const FlightSearchForm: FC<FlightSearchFormProps> = () => {
-  const [dropOffLocationType, setDropOffLocationType] =
-    useState<TypeDropOffLocationType>("roundTrip");
+  const [dropOffLocationType, setDropOffLocationType] = useState<TypeDropOffLocationType>("roundTrip");
   const [flightClassState, setFlightClassState] = useState("Economy");
-
   const [guestAdultsInputValue, setGuestAdultsInputValue] = useState(2);
   const [guestChildrenInputValue, setGuestChildrenInputValue] = useState(1);
   const [guestInfantsInputValue, setGuestInfantsInputValue] = useState(1);
+  const [loading, setLoading] = useState(false);
 
   const handleChangeData = (value: number, type: keyof GuestsObject) => {
     let newValue = {
@@ -55,8 +48,7 @@ const FlightSearchForm: FC<FlightSearchFormProps> = () => {
     }
   };
 
-  const totalGuests =
-    guestChildrenInputValue + guestAdultsInputValue + guestInfantsInputValue;
+  const totalGuests = guestChildrenInputValue + guestAdultsInputValue + guestInfantsInputValue;
 
   const renderGuest = () => {
     return (
@@ -65,16 +57,12 @@ const FlightSearchForm: FC<FlightSearchFormProps> = () => {
           <>
             <Popover.Button
               as="button"
-              className={`
-           ${open ? "" : ""}
-            px-4 py-1.5 rounded-md inline-flex items-center font-medium hover:text-opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 text-xs`}
+              className={`px-4 py-1.5 rounded-md inline-flex items-center font-medium hover:text-opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 text-xs`}
               onClickCapture={() => document.querySelector("html")?.click()}
             >
               <span>{`${totalGuests || ""} Guests`}</span>
               <ChevronDownIcon
-                className={`${
-                  open ? "" : "text-opacity-70"
-                } ml-2 h-4 w-4 group-hover:text-opacity-80 transition ease-in-out duration-150`}
+                className={`${open ? "" : "text-opacity-70"} ml-2 h-4 w-4 group-hover:text-opacity-80 transition ease-in-out duration-150`}
                 aria-hidden="true"
               />
             </Popover.Button>
@@ -105,7 +93,6 @@ const FlightSearchForm: FC<FlightSearchFormProps> = () => {
                   label="Children"
                   desc="Ages 2–12"
                 />
-
                 <NcInputNumber
                   className="w-full mt-6"
                   defaultValue={guestInfantsInputValue}
@@ -128,16 +115,12 @@ const FlightSearchForm: FC<FlightSearchFormProps> = () => {
         {({ open, close }) => (
           <>
             <Popover.Button
-              className={`
-           ${open ? "" : ""}
-            px-4 py-1.5 rounded-md inline-flex items-center font-medium hover:text-opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 text-xs`}
+              className={`px-4 py-1.5 rounded-md inline-flex items-center font-medium hover:text-opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 text-xs`}
               onClickCapture={() => document.querySelector("html")?.click()}
             >
               <span>{`${flightClassState}`}</span>
               <ChevronDownIcon
-                className={`${
-                  open ? "" : "text-opacity-70"
-                } ml-2 h-4 w-4 group-hover:text-opacity-80 transition ease-in-out duration-150`}
+                className={`${open ? "" : "text-opacity-70"} ml-2 h-4 w-4 group-hover:text-opacity-80 transition ease-in-out duration-150`}
                 aria-hidden="true"
               />
             </Popover.Button>
@@ -215,7 +198,7 @@ const FlightSearchForm: FC<FlightSearchFormProps> = () => {
 
   const renderForm = () => {
     return (
-      <form className="w-full relative mt-8 rounded-[40px] xl:rounded-[49px] rounded-t-2xl xl:rounded-t-3xl shadow-xl dark:shadow-2xl bg-white dark:bg-neutral-800">
+      <form className="w-full relative mt-8 rounded-[40px] xl:rounded-[49px] rounded-t-2xl xl:rounded-t-3xl shadow-xl dark:shadow-2xl bg-white dark:bg-neutral-800" onSubmit={handleSubmit}>
         {renderRadioBtn()}
         <div className="flex flex-1 rounded-full">
           <LocationInput
@@ -236,8 +219,41 @@ const FlightSearchForm: FC<FlightSearchFormProps> = () => {
             className="flex-1"
           />
         </div>
+        <button type="submit" className="mt-4 bg-blue-500 text-white py-2 px-4 rounded">
+          {loading ? "Loading..." : "Search Flights"}
+        </button>
       </form>
     );
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+
+    const requestData = {
+      data: {
+        slices: [
+          {
+            origin: "origin_code", // Map this to the actual origin input value
+            destination: "destination_code", // Map this to the actual destination input value
+            departure_date: "2023-12-01", // Map this to the actual departure date input value
+          },
+        ],
+        passengers: [
+          { type: "adult", age: 30 }, // Map this to the actual passenger details
+        ],
+        cabin_class: flightClassState.toLowerCase(),
+      },
+    };
+
+    try {
+      const response = await axios.post('http://localhost:5000/duffel-flights-list-offers', requestData);
+      console.log(response.data); // Handle the response data
+    } catch (error) {
+      console.error("Error fetching flight offers:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return renderForm();

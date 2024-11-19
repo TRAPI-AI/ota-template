@@ -1,3 +1,5 @@
+// Integrating the frontend with the backend for Duffel flights list offers
+
 "use client";
 
 import React, { Fragment, useState } from "react";
@@ -27,6 +29,7 @@ const FlightDateRangeInput: FC<FlightDateRangeInputProps> = ({
     new Date("2023/05/01")
   );
   const [endDate, setEndDate] = useState<Date | null>(new Date("2023/05/16"));
+  const [loading, setLoading] = useState(false);
 
   const onChangeRangeDate = (dates: [Date | null, Date | null]) => {
     const [start, end] = dates;
@@ -34,10 +37,41 @@ const FlightDateRangeInput: FC<FlightDateRangeInputProps> = ({
     setEndDate(end);
   };
 
-  const handleSearch = () => {
-    // Implement the logic to handle the search action
-    // For example, fetch search results from an API or update the state to display results
-    console.log("Search button clicked");
+  const handleSearch = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("http://localhost:5000/duffel-flights-list-offers", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "DUFFEL_API_KEY": "your_api_key_here" // Replace with actual API key
+        },
+        body: JSON.stringify({
+          data: {
+            slices: [
+              {
+                origin: "JFK", // Example origin
+                destination: "LAX", // Example destination
+                departure_date: startDate?.toISOString().split('T')[0] || "",
+              }
+            ],
+            passengers: [
+              {
+                type: "adult"
+              }
+            ],
+            cabin_class: "economy"
+          }
+        })
+      });
+
+      const data = await response.json();
+      console.log("Search results:", data);
+    } catch (error) {
+      console.error("Error fetching flight offers:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderInput = () => {
@@ -94,7 +128,7 @@ const FlightDateRangeInput: FC<FlightDateRangeInputProps> = ({
               {/* BUTTON SUBMIT OF FORM */}
               {hasButtonSubmit && (
                 <div className="pr-2 xl:pr-4">
-                <ButtonSubmit onClick={handleSearch} />
+                  <ButtonSubmit onClick={handleSearch} />
                 </div>
               )}
             </div>
@@ -152,6 +186,7 @@ const FlightDateRangeInput: FC<FlightDateRangeInputProps> = ({
           </>
         )}
       </Popover>
+      {loading && <div className="loading-indicator">Loading...</div>}
     </>
   );
 };

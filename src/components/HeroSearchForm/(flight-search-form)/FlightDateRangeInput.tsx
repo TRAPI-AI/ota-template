@@ -34,6 +34,12 @@ const FlightDateRangeInput: FC<FlightDateRangeInputProps> = ({
     setEndDate(end);
   };
 
+  const handleSearch = () => {
+    // Implement the logic to handle the search action
+    // For example, fetch search results from an API or update the state to display results
+    console.log("Search button clicked");
+  };
+
   const renderInput = () => {
     return (
       <>
@@ -88,7 +94,7 @@ const FlightDateRangeInput: FC<FlightDateRangeInputProps> = ({
               {/* BUTTON SUBMIT OF FORM */}
               {hasButtonSubmit && (
                 <div className="pr-2 xl:pr-4">
-                  <ButtonSubmit href="/listing-car-detail" />
+                <ButtonSubmit onClick={handleSearch} />
                 </div>
               )}
             </div>

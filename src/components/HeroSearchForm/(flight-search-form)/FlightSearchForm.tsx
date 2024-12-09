@@ -6,21 +6,22 @@ import { Fragment } from "react";
 import FlightDateRangeInput from "./FlightDateRangeInput";
 import { GuestsObject } from "../type";
 import NcInputNumber from "components/NcInputNumber/NcInputNumber";
+import axios from "axios";
 
 export interface FlightSearchFormProps {}
 
 const flightClass = [
   {
     name: "Economy",
-    href: "##",
+    value: "economy",
   },
   {
     name: "Business",
-    href: "##",
+    value: "business",
   },
   {
     name: "Multiple",
-    href: "##",
+    value: "multiple",
   },
 ];
 
@@ -29,34 +30,66 @@ export type TypeDropOffLocationType = "roundTrip" | "oneWay" | "";
 const FlightSearchForm: FC<FlightSearchFormProps> = () => {
   const [dropOffLocationType, setDropOffLocationType] =
     useState<TypeDropOffLocationType>("roundTrip");
-  const [flightClassState, setFlightClassState] = useState("Economy");
+  const [flightClassState, setFlightClassState] = useState("economy");
 
   const [guestAdultsInputValue, setGuestAdultsInputValue] = useState(2);
   const [guestChildrenInputValue, setGuestChildrenInputValue] = useState(1);
   const [guestInfantsInputValue, setGuestInfantsInputValue] = useState(1);
 
+  const [origin, setOrigin] = useState("");
+  const [destination, setDestination] = useState("");
+  const [departureDate, setDepartureDate] = useState("");
+  const [returnDate, setReturnDate] = useState("");
+
+  const [loading, setLoading] = useState(false);
+
   const handleChangeData = (value: number, type: keyof GuestsObject) => {
-    let newValue = {
-      guestAdults: guestAdultsInputValue,
-      guestChildren: guestChildrenInputValue,
-      guestInfants: guestInfantsInputValue,
-    };
     if (type === "guestAdults") {
       setGuestAdultsInputValue(value);
-      newValue.guestAdults = value;
     }
     if (type === "guestChildren") {
       setGuestChildrenInputValue(value);
-      newValue.guestChildren = value;
     }
     if (type === "guestInfants") {
       setGuestInfantsInputValue(value);
-      newValue.guestInfants = value;
     }
   };
 
   const totalGuests =
     guestChildrenInputValue + guestAdultsInputValue + guestInfantsInputValue;
+
+  const handleSearch = async () => {
+    setLoading(true);
+    const requestData = {
+      data: {
+        slices: [
+          {
+            origin,
+            destination,
+            departure_date: departureDate,
+          },
+        ],
+        passengers: [
+          { type: "adult", age: 18 },
+          { type: "child", age: 10 },
+          { type: "infant", age: 1 },
+        ],
+        cabin_class: flightClassState,
+      },
+    };
+
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/duffel-flights-list-offers",
+        requestData
+      );
+      console.log(response.data);
+    } catch (error) {
+      console.error("Error fetching flight offers:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renderGuest = () => {
     return (
@@ -72,9 +105,7 @@ const FlightSearchForm: FC<FlightSearchFormProps> = () => {
             >
               <span>{`${totalGuests || ""} Guests`}</span>
               <ChevronDownIcon
-                className={`${
-                  open ? "" : "text-opacity-70"
-                } ml-2 h-4 w-4 group-hover:text-opacity-80 transition ease-in-out duration-150`}
+                className={`${open ? "" : "text-opacity-70"} ml-2 h-4 w-4 group-hover:text-opacity-80 transition ease-in-out duration-150`}
                 aria-hidden="true"
               />
             </Popover.Button>
@@ -135,9 +166,7 @@ const FlightSearchForm: FC<FlightSearchFormProps> = () => {
             >
               <span>{`${flightClassState}`}</span>
               <ChevronDownIcon
-                className={`${
-                  open ? "" : "text-opacity-70"
-                } ml-2 h-4 w-4 group-hover:text-opacity-80 transition ease-in-out duration-150`}
+                className={`${open ? "" : "text-opacity-70"} ml-2 h-4 w-4 group-hover:text-opacity-80 transition ease-in-out duration-150`}
                 aria-hidden="true"
               />
             </Popover.Button>
@@ -156,10 +185,10 @@ const FlightSearchForm: FC<FlightSearchFormProps> = () => {
                     {flightClass.map((item) => (
                       <a
                         key={item.name}
-                        href={item.href}
+                        href="#"
                         onClick={(e) => {
                           e.preventDefault();
-                          setFlightClassState(item.name);
+                          setFlightClassState(item.value);
                           close();
                         }}
                         className="flex items-center p-2 -m-3 transition duration-150 ease-in-out rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring focus-visible:ring-orange-500 focus-visible:ring-opacity-50"
@@ -215,13 +244,20 @@ const FlightSearchForm: FC<FlightSearchFormProps> = () => {
 
   const renderForm = () => {
     return (
-      <form className="w-full relative mt-8 rounded-[40px] xl:rounded-[49px] rounded-t-2xl xl:rounded-t-3xl shadow-xl dark:shadow-2xl bg-white dark:bg-neutral-800">
+      <form
+        className="w-full relative mt-8 rounded-[40px] xl:rounded-[49px] rounded-t-2xl xl:rounded-t-3xl shadow-xl dark:shadow-2xl bg-white dark:bg-neutral-800"
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSearch();
+        }}
+      >
         {renderRadioBtn()}
         <div className="flex flex-1 rounded-full">
           <LocationInput
             placeHolder="Flying from"
             desc="Where do you want to fly from?"
             className="flex-1"
+            onChange={(value) => setOrigin(value)}
           />
           <div className="self-center border-r border-slate-200 dark:border-slate-700 h-8"></div>
           <LocationInput
@@ -229,13 +265,19 @@ const FlightSearchForm: FC<FlightSearchFormProps> = () => {
             desc="Where you want to fly to?"
             className="flex-1"
             divHideVerticalLineClass=" -inset-x-0.5"
+            onChange={(value) => setDestination(value)}
           />
           <div className="self-center border-r border-slate-200 dark:border-slate-700 h-8"></div>
           <FlightDateRangeInput
             selectsRange={dropOffLocationType !== "oneWay"}
             className="flex-1"
+            onDateChange={(start, end) => {
+              setDepartureDate(start);
+              setReturnDate(end);
+            }}
           />
         </div>
+        {loading && <div className="loading-indicator">Loading...</div>}
       </form>
     );
   };

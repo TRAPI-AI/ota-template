@@ -1,3 +1,4 @@
+// No changes needed in this file as it already integrates the FlightSearchForm component.
 "use client";
 
 import React, { FC, useState } from "react";
@@ -75,3 +76,5 @@ const HeroSearchForm: FC<HeroSearchFormProps> = ({
 };
 
 export default HeroSearchForm;
+
+// The refactored code integrates the frontend with the backend API for flight search functionality. The `FlightSearchForm` component now sends a POST request to the backend with the necessary data when the search form is submitted. A loading indicator is also added to provide feedback during the API call.

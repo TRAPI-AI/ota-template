@@ -15,6 +15,7 @@ export interface FlightDateRangeInputProps {
   fieldClassName?: string;
   hasButtonSubmit?: boolean;
   selectsRange?: boolean;
+  onDateChange?: (start: string, end: string) => void;
 }
 
 const FlightDateRangeInput: FC<FlightDateRangeInputProps> = ({
@@ -22,6 +23,7 @@ const FlightDateRangeInput: FC<FlightDateRangeInputProps> = ({
   fieldClassName = "[ nc-hero-field-padding ]",
   hasButtonSubmit = true,
   selectsRange = true,
+  onDateChange,
 }) => {
   const [startDate, setStartDate] = useState<Date | null>(
     new Date("2023/05/01")
@@ -32,11 +34,15 @@ const FlightDateRangeInput: FC<FlightDateRangeInputProps> = ({
     const [start, end] = dates;
     setStartDate(start);
     setEndDate(end);
+    if (onDateChange && start && end) {
+      onDateChange(
+        start.toISOString().split("T")[0],
+        end.toISOString().split("T")[0]
+      );
+    }
   };
 
   const handleSearch = () => {
-    // Implement the logic to handle the search action
-    // For example, fetch search results from an API or update the state to display results
     console.log("Search button clicked");
   };
 
@@ -91,10 +97,9 @@ const FlightDateRangeInput: FC<FlightDateRangeInputProps> = ({
                 )}
               </Popover.Button>
 
-              {/* BUTTON SUBMIT OF FORM */}
               {hasButtonSubmit && (
                 <div className="pr-2 xl:pr-4">
-                <ButtonSubmit onClick={handleSearch} />
+                  <ButtonSubmit onClick={handleSearch} />
                 </div>
               )}
             </div>
